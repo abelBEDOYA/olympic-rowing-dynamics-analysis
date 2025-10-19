@@ -1,5 +1,6 @@
 # 🛶 Sistema Físico Remero–Barco–Agua 1D  
-**Archivo principal:** `src/interactive.py`
+
+![Vista general del proyecto](assets/diagram.png)
 
 ---
 
@@ -8,8 +9,14 @@
 Este proyecto modela y simula el **sistema físico unidimensional remero–barco–agua** durante la **fase aérea de la modalidad de remo de banco móvil**.  
 El propósito es ofrecer una herramienta **interactiva** que permita estudiar la dinámica del conjunto, controlando directamente la **cinemática del remero** durante la fase de recuperación.
 
+![Planteamiento polinómico](assets/cap1.png)
+
+
 El usuario define un **polinomio libre** que describe la posición del remero a lo largo del tiempo.  
 El programa **impone automáticamente las condiciones de contorno físicas** para garantizar una transición suave (posición, velocidad y aceleración nulas al inicio y fin del ciclo).
+
+![Vista general del proyecto](assets/description.png)
+
 
 ---
 
@@ -67,6 +74,8 @@ por lo que:
 $$
 p(t) = a_2t^2 + a_3t^3 + a_4t^4 + \cdots + a_n t^n
 $$
+
+
 
 #### Condiciones finales en \( t = T \)
 
@@ -133,10 +142,13 @@ El archivo principal `src/interactive.py` lanza una **interfaz interactiva** que
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/usuario/remero-barco-agua.git
+git clone https://github.com/abelBEDOYA/olympic-rowing-dynamics-analysis.git
 
-# Entrar en el directorio
-cd remero-barco-agua
+cd olympic-rowing-dynamics-analysis/
+
+conda create -n row python==3.12.0
+
+pip install -r requirements.txt
 
 # Ejecutar la aplicación interactiva
 python src/interactive.py
