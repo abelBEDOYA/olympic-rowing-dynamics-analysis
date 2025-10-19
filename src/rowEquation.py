@@ -95,7 +95,50 @@ class RowEquation():
                     'yy_dot': yy_dot,
                     'yy_ddot': yy_ddot}
         self.solution = solution
+        self.calculate_magnitudes()
         return solution
+    
+    def calculate_magnitudes(self):
+        if not self.solution:
+            return 
+        V_i = self.y0_dot
+        V_f = self.solution['yy_dot'][-1]
+        # p_i = self.solution['yy'][0]
+        p_f = self.solution['yy'][-1]
+
+        ## Energía mecánica perdida del sistema:
+        dE_sistema = 0.5*(self.M+self.m)*(V_i**2-V_f**2)
+
+        ## Energía gastaad por el remero:
+        dE_rower = self.calculate_energy()
+
+        self.solution['magnitudes'] = {'dE_sist': dE_sistema,
+                                       'dE_rower': dE_rower,
+                                       'p_f': p_f,
+                                       'v_f': V_f,
+                                       'dv': V_f-V_i}
+
+    def calculate_energy(self):
+        """
+        Calcula la energía gastada por la persona al caminar sobre el barco
+        usando la solución almacenada en self.solution.
+        """
+        if self.solution is None:
+            raise ValueError("Primero debes resolver la EDO con solve_edo()")
+
+        tt = self.solution['tt']
+        xx_ddot = self.solution['xx_ddot']   # aceleración persona relativa al barco
+        yy_dot = self.solution['yy_dot']     # velocidad barco relativa al agua
+        xx_dot = self.solution['xx_dot']     # velocidad persona relativa al barco
+
+        # Fuerza que la persona aplica sobre el barco
+        F_persona = self.B * xx_ddot + self.A * np.abs(yy_dot) * yy_dot
+
+        # Energía gastada = integral de F_persona * v_rel_persona dt
+        dt = tt[1] - tt[0]
+        E_persona = np.sum(F_persona * xx_dot * dt)
+
+        return E_persona
 
     def plot_rower_cinematic(self, n_t:int = 1000):
         if not self.coeffs:

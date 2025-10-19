@@ -9,7 +9,7 @@
 Este proyecto modela y simula el **sistema físico unidimensional remero–barco–agua** durante la **fase aérea de la modalidad de remo de banco móvil**.  
 El propósito es ofrecer una herramienta **interactiva** que permita estudiar la dinámica del conjunto, controlando directamente la **cinemática del remero** durante la fase de recuperación.
 
-![Planteamiento polinómico](assets/cap1.png)
+![Planteamiento polinómico](assets/cap3.png)
 
 
 El usuario define un **polinomio libre** que describe la posición del remero a lo largo del tiempo.  
