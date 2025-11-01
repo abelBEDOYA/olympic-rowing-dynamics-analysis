@@ -34,17 +34,22 @@ class InteractiveRowEquationPlot:
 
         # Grado del polinomio
         self.slider_deg = Slider(plt.axes([slider_ax+0.02, 0.85, 0.15, height]),
-                                 'Grado', 4, 10, valinit=self.degree, valstep=1)
+                                'Grado', 4, 10, valinit=self.degree, valstep=1)
         self.slider_deg.on_changed(self.change_degree)
 
         # Parámetros modificables
-        params = ['M', 'm', 'L', 'T', 'rho', 'S', 'Cd']
+        params = ['M', 'm', 'L', 'T', 'rho', 'S', 'Cd', 'y0_dot']
         self.textboxes = {}
         for i, p in enumerate(params):
             ax_box = plt.axes([slider_ax+0.02, 0.75 - i * spacing, 0.15, height])
             box = TextBox(ax_box, f'{p}: ', initial=str(getattr(self.eq, p)))
             box.on_submit(self.update_param)
             self.textboxes[p] = box
+
+        # NUEVO: y0_dot
+        # ax_y0_dot = plt.axes([slider_ax+0.02, 0.75 - len(params)*spacing, 0.15, height])
+        # self.box_y0_dot = TextBox(ax_y0_dot, 'y0_dot: ', initial=str(self.eq.y0_dot))
+        # self.box_y0_dot.on_submit(self.update_param)
 
         # Botones
         self.ax_reset = plt.axes([slider_ax, 0.15, 0.15, 0.05])
@@ -54,6 +59,7 @@ class InteractiveRowEquationPlot:
         self.ax_fit = plt.axes([slider_ax, 0.05, 0.15, 0.05])
         self.button_fit = Button(self.ax_fit, 'Ajustar')
         self.button_fit.on_clicked(self.fit_polynomial)
+
 
     # ------------------------------------------------------------------
     # Gráficas
@@ -115,9 +121,11 @@ class InteractiveRowEquationPlot:
                 txt.remove()
             mag = s['magnitudes']
             info_text = (
+                f"Ei: {mag['Ei']:.2f} J\n"                
+                f"Ef: {mag['Ef']:.2f} J\n"
                 f"dE_sist: {mag['dE_sist']:.2f} J\n"
                 f"dE_rower: {mag['dE_rower']:.2f} J\n"
-                f"p_f: {mag['p_f']:.2f} m\n"
+                f"dx_f: {mag['p_f']:.2f} m\n"
                 f"v_f: {mag['v_f']:.2f} m/s\n"
                 f"dv: {mag['dv']:.2f} m/s"
             )
@@ -158,21 +166,33 @@ class InteractiveRowEquationPlot:
 
     def update_param(self, text):
         """Actualiza parámetros físicos de RowEquation."""
+        # Actualiza parámetros generales
         for name, box in self.textboxes.items():
             try:
                 val = float(box.text)
+                print(f"Actualizando {name} a {val}")
                 setattr(self.eq, name, val)
             except ValueError:
                 print(f"Valor no válido para {name}: {box.text}")
+
+        # Actualiza y0_dot
+        # try:
+        #     self.eq.y0_dot = float(self.box_y0_dot.text)
+        # except ValueError:
+        #     print(f"Valor no válido para y0_dot: {self.box_y0_dot.text}")
 
         # Recalcular dependencias internas
         self.eq.mu = 1 / (self.eq.M + self.eq.m)
         self.eq.B = self.eq.m * self.eq.mu
         self.eq.A = -0.5 * self.eq.S * self.eq.rho * self.eq.Cd * self.eq.mu
-
+        high_coeffs = [0] * (self.degree - 3)
+        high_coeffs[-1] = 1
+        self.eq.set_rower_cinematic(high_coeffs)
         # Resolver de nuevo la EDO
         self.eq.solve_edo()
+        print(self.eq.summary())
         self.draw_plots()
+
 
     def fit_polynomial(self, event):
         if not self.points:

@@ -69,11 +69,12 @@ class RowEquation():
         """Dynamic EDO which relates water frictional force and the rower's movement on the ship."""
         return self.A*np.abs(v)*v - self.B*self.x_ddot(t)
 
-    def solve_edo(self, y0: float =0, y0_dot: float = 10, n_t_intervals: int = 5000):
+    def solve_edo(self, y0: float =0, y0_dot: float = None, n_t_intervals: int = 5000):
 
         # ----------------------
         # Resolver numéricamente
         # ----------------------
+        y0_dot = self.y0_dot if y0_dot is None else y0_dot
         t_span = (0, self.T)
         t_eval = np.linspace(0, self.T, n_t_intervals)
         sol = solve_ivp(lambda t, y: [self.dynamic_edo(t, y[0]), y[0]], t_span, [y0_dot, y0], t_eval=t_eval)
@@ -107,16 +108,20 @@ class RowEquation():
         p_f = self.solution['yy'][-1]
 
         ## Energía mecánica perdida del sistema:
-        dE_sistema = 0.5*(self.M+self.m)*(V_i**2-V_f**2)
-
+        Ei = 0.5*(self.M+self.m)*V_i**2
+        Ef = 0.5*(self.M+self.m)*V_f**2
+        dE_sistema =Ef - Ei
         ## Energía gastaad por el remero:
         dE_rower = self.calculate_energy()
 
-        self.solution['magnitudes'] = {'dE_sist': dE_sistema,
-                                       'dE_rower': dE_rower,
-                                       'p_f': p_f,
-                                       'v_f': V_f,
-                                       'dv': V_f-V_i}
+        self.solution['magnitudes'] = {
+            'Ei': Ei,
+            'Ef': Ef,
+            'dE_sist': dE_sistema,
+            'dE_rower': dE_rower,
+            'p_f': p_f,
+            'v_f': V_f,
+            'dv': V_f-V_i}
 
     def calculate_energy(self):
         """
@@ -130,13 +135,14 @@ class RowEquation():
         xx_ddot = self.solution['xx_ddot']   # aceleración persona relativa al barco
         yy_dot = self.solution['yy_dot']     # velocidad barco relativa al agua
         xx_dot = self.solution['xx_dot']     # velocidad persona relativa al barco
+        yy_ddot = self.solution['yy_ddot']     # velocidad barco relativa al agua
 
         # Fuerza que la persona aplica sobre el barco
-        F_persona = self.B * xx_ddot + self.A * np.abs(yy_dot) * yy_dot
-
+        # F_persona = self.B * xx_ddot + self.A * np.abs(yy_dot) * yy_dot
+        F_persona = self.m*(xx_ddot+yy_ddot)
         # Energía gastada = integral de F_persona * v_rel_persona dt
         dt = tt[1] - tt[0]
-        E_persona = np.sum(F_persona * xx_dot * dt)
+        E_persona = np.sum(F_persona * xx_dot)*dt
 
         return E_persona
 
