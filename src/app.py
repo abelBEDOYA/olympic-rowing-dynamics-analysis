@@ -5,6 +5,7 @@ from plotly.subplots import make_subplots
 from rowEquation import RowEquation
 import random
 import stream_app.parts as parts
+from streamlit_plotly_events import plotly_events
 
 
 st.set_page_config(layout="wide",
@@ -16,7 +17,7 @@ st.set_page_config(layout="wide",
 # --------------------------------------------------
 st.title("Sistema Físico Remero–Barco–Agua 1D  ")
 
-col_graficas, col_form = st.columns([3, 1])   # Graficas a la izquierda, formulario estrecho a la derecha
+col_graficas, col_form, col_digram = st.columns([3, 1,1])   # Graficas a la izquierda, formulario estrecho a la derecha
 
 # --------------------------------------------------
 # FORMULARIO
@@ -37,7 +38,13 @@ with col_form:
         y0_dot = st.number_input("y0_dot", value=0.0)
 
         recalcular = st.form_submit_button("Recalcular")
+        # Elegir la gráfica X(t) interactiva
+        grafica_interactiva = st.selectbox("Elige la gráfica interactiva X(t)", 
+                                        ["x(t) — Rower Position", 
+                                            "x'(t) — Rower Speed", 
+                                            "x''(t) — Rower Acceleration"])
 
+        # N_puntos = st.number_input("Número de puntos a seleccionar", min_value=1, value=3, step=1)
 # --------------------------------------------------
 # RESULTADOS Y GRÁFICAS A LA IZQUIERDA
 # --------------------------------------------------
@@ -88,19 +95,28 @@ with col_graficas:
 
         fig.update_layout(height=900, showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
-parts.animar_bola_1d(solution['xx'], T = modelo.T, L = modelo.L)
-if recalcular:
-    st.text("Funcion de posición x(t) del remero:")
-    latex_str = rf"x(t) = {' + '.join(
-        f'{c:.2f}t^{{{i}}}' if i > 1 else (f'{c:.2f}t' if i == 1 else f'{c:.2f}')
-        for i, c in enumerate(modelo.coeffs) if c != 0
-    )}"
 
-    st.latex(latex_str)
-# --------------------------------------------------
-# IMAGEN DEBAJO DE TODO
-# --------------------------------------------------
-st.subheader("Imagen adicional")
+         # -----------------------------
+        # Gráfica interactiva para click
+        # -----------------------------
+        fig_click = go.Figure()
+        fig_click.add_trace(go.Scatter(x=[1,2,3], y=[1,4,7], mode='lines', name=grafica_interactiva))
 
-st.image("assets/diagram.png"
-)
+        puntos_seleccionados = plotly_events(fig_click, click_event=True, select_event=False, key="fig_click")
+
+        if puntos_seleccionados:
+            print(puntos_seleccionados)
+
+with col_digram:
+    if recalcular:
+        parts.animar_bola_1d(solution['xx'], T = modelo.T, L = modelo.L)
+        st.text("Funcion de posición x(t) del remero:")
+        latex_str = rf"x(t) = {' + '.join(
+            f'{c:.2f}t^{{{i}}}' if i > 1 else (f'{c:.2f}t' if i == 1 else f'{c:.2f}')
+            for i, c in enumerate(modelo.coeffs) if c != 0
+        )}"
+
+        st.latex(latex_str)
+
+    st.image("assets/diagram.png"
+    )

@@ -10,7 +10,7 @@ def animar_bola_1d(x_positions, L, T):
 
     # Figura base
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=[x_positions[0]], y=[0], mode="markers", marker=dict(size=20), name="Bola"))
+    fig.add_trace(go.Scatter(x=[x_positions[0]], y=[0], mode="markers", marker=dict(size=20), name="Remero"))
     fig.add_trace(go.Scatter(x=[0, L], y=[0, 0], mode="markers", marker=dict(size=12, color="green"), name="Ref"))
 
     fig.update_layout(
