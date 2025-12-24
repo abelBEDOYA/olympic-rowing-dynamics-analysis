@@ -26,6 +26,9 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    volumes:
+      - ./frontend/public/img:/usr/share/nginx/html/img
+      - ./frontend/public/docs:/usr/share/nginx/html/docs
     restart: unless-stopped
 
 networks:
