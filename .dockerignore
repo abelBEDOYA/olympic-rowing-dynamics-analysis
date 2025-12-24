@@ -1,0 +1,31 @@
+# Build artifacts
+dist/
+build/
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Docs
+*.md
+docs/
+
+# Old source files (kept for reference)
+src/
+
+# Misc
+.env*
+*.log

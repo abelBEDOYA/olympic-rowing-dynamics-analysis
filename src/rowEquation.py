@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 
 class RowEquation():
-    def __init__(self,m=80, M=20, L=-1, T=1, rho: float = 1000, S: float = 0.5, Cd: float = 0.004):
+    def __init__(self,m=80, M=20, L=-1, T=1, rho: float = 1000, S: float = 0.5, Cd: float = 0.004, y0_dot: float = 10):
         self.m = m
         self.M = M
         self.L = L
@@ -18,7 +18,7 @@ class RowEquation():
         self.coeffs = []
         self.polinomical_grade = None
         self.y0 = 0
-        self.y0_dot = 10
+        self.y0_dot = y0_dot
         self.solution = None
 
     def set_rower_cinematic(self, high_coeffs: list = []):
