@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
     LineChart,
     Line,
@@ -16,103 +16,36 @@ import type {
 import {
     calculateSimulation,
     fitPolynomial,
-    getDefaultParameters,
 } from '../api';
 import { InteractiveChart } from '../InteractiveChart';
 import { Latex } from '../Latex';
+import { ParameterForm } from '../components/ParameterForm';
 import { useLang } from '../contexts';
 import { getTranslation } from '../translations';
-
-const DEFAULT_PARAMS: SimulationParameters = {
-    m: 80,
-    M: 20,
-    L: -1,
-    T: 1,
-    rho: 1000,
-    S: 0.5,
-    Cd: 0.004,
-    y0_dot: 10,
-    degree: 4,
-};
 
 export function AnalysisPage() {
     const { lang } = useLang();
     const t = getTranslation(lang);
 
-    const [params, setParams] = useState<SimulationParameters>(DEFAULT_PARAMS);
-    const [formValues, setFormValues] = useState<Record<string, string>>({});
     const [result, setResult] = useState<SimulationResult | null>(null);
     const [points, setPoints] = useState<Point[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    // Keep track of last used params for fitting
+    const [lastParams, setLastParams] = useState<SimulationParameters | null>(null);
 
-    // Initialize form values from params
-    useEffect(() => {
-        setFormValues({
-            m: String(params.m),
-            M: String(params.M),
-            L: String(params.L),
-            T: String(params.T),
-            rho: String(params.rho),
-            S: String(params.S),
-            Cd: String(params.Cd),
-            y0_dot: String(params.y0_dot),
-            degree: String(params.degree),
-        });
-    }, []);
-
-    // Load defaults on mount
-    useEffect(() => {
-        getDefaultParameters()
-            .then((p) => {
-                setParams(p);
-                setFormValues({
-                    m: String(p.m),
-                    M: String(p.M),
-                    L: String(p.L),
-                    T: String(p.T),
-                    rho: String(p.rho),
-                    S: String(p.S),
-                    Cd: String(p.Cd),
-                    y0_dot: String(p.y0_dot),
-                    degree: String(p.degree),
-                });
-            })
-            .catch(() => {/* Use hardcoded defaults */ });
-    }, []);
-
-    // Handle form input change (local only, no re-renders)
-    const handleInputChange = (key: string, value: string) => {
-        setFormValues((prev) => ({ ...prev, [key]: value }));
-    };
-
-    // Build params from form values
-    const getParamsFromForm = (): SimulationParameters => {
-        return {
-            m: parseFloat(formValues.m) || DEFAULT_PARAMS.m,
-            M: parseFloat(formValues.M) || DEFAULT_PARAMS.M,
-            L: parseFloat(formValues.L) || DEFAULT_PARAMS.L,
-            T: parseFloat(formValues.T) || DEFAULT_PARAMS.T,
-            rho: parseFloat(formValues.rho) || DEFAULT_PARAMS.rho,
-            S: parseFloat(formValues.S) || DEFAULT_PARAMS.S,
-            Cd: parseFloat(formValues.Cd) || DEFAULT_PARAMS.Cd,
-            y0_dot: parseFloat(formValues.y0_dot) || DEFAULT_PARAMS.y0_dot,
-            degree: parseInt(formValues.degree) || DEFAULT_PARAMS.degree,
-        };
-    };
-
-    const handleCalculate = async () => {
-        const currentParams = getParamsFromForm();
-        setParams(currentParams);
+    const handleCalculate = async (params: SimulationParameters) => {
         setLoading(true);
         setError(null);
+        setLastParams(params);
+
         // On mobile, close sidebar after calculation to show results
         if (window.innerWidth < 768) {
             setSidebarOpen(false);
         }
         try {
-            const data = await calculateSimulation(currentParams);
+            const data = await calculateSimulation(params);
             setResult(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al calcular');
@@ -126,12 +59,15 @@ export function AnalysisPage() {
             setError(t.analysis.selectPointsError);
             return;
         }
-        const currentParams = getParamsFromForm();
-        setParams(currentParams);
+        if (!lastParams) {
+            setError("Calcula primero para establecer los parámetros base");
+            return;
+        }
+
         setLoading(true);
         setError(null);
         try {
-            const data = await fitPolynomial({ parameters: currentParams, points });
+            const data = await fitPolynomial({ parameters: lastParams, points });
             setResult(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al ajustar polinomio');
@@ -188,98 +124,7 @@ export function AnalysisPage() {
                         <h2>{t.analysis.parameters}</h2>
                     </div>
 
-                    <form className="parameter-form" onSubmit={(e) => { e.preventDefault(); handleCalculate(); }}>
-                        <div className="form-group">
-                            <label>{t.analysis.rowerMass}</label>
-                            <input
-                                type="number"
-                                value={formValues.m ?? ''}
-                                onChange={(e) => handleInputChange('m', e.target.value)}
-                                step="1"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>{t.analysis.boatMass}</label>
-                            <input
-                                type="number"
-                                value={formValues.M ?? ''}
-                                onChange={(e) => handleInputChange('M', e.target.value)}
-                                step="1"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>{t.analysis.displacement}</label>
-                            <input
-                                type="number"
-                                value={formValues.L ?? ''}
-                                onChange={(e) => handleInputChange('L', e.target.value)}
-                                step="0.1"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>{t.analysis.duration}</label>
-                            <input
-                                type="number"
-                                value={formValues.T ?? ''}
-                                onChange={(e) => handleInputChange('T', e.target.value)}
-                                step="0.1"
-                                min="0.1"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>{t.analysis.waterDensity}</label>
-                            <input
-                                type="number"
-                                value={formValues.rho ?? ''}
-                                onChange={(e) => handleInputChange('rho', e.target.value)}
-                                step="10"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>{t.analysis.crossSection}</label>
-                            <input
-                                type="number"
-                                value={formValues.S ?? ''}
-                                onChange={(e) => handleInputChange('S', e.target.value)}
-                                step="0.01"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>{t.analysis.dragCoeff}</label>
-                            <input
-                                type="number"
-                                value={formValues.Cd ?? ''}
-                                onChange={(e) => handleInputChange('Cd', e.target.value)}
-                                step="0.001"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>{t.analysis.initialVelocity}</label>
-                            <input
-                                type="number"
-                                value={formValues.y0_dot ?? ''}
-                                onChange={(e) => handleInputChange('y0_dot', e.target.value)}
-                                step="0.5"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>{t.analysis.polyDegree}</label>
-                            <input
-                                type="number"
-                                value={formValues.degree ?? ''}
-                                onChange={(e) => handleInputChange('degree', e.target.value)}
-                                min="3"
-                                max="10"
-                                step="1"
-                            />
-                        </div>
-
-                        <hr className="section-divider" />
-
-                        <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-                            {loading ? t.analysis.calculating : `⚡ ${t.analysis.calculate}`}
-                        </button>
-                    </form>
+                    <ParameterForm onCalculate={handleCalculate} loading={loading} />
 
                     {/* Points section */}
                     {result && (
@@ -420,7 +265,7 @@ export function AnalysisPage() {
                                                 yLabel={config.yLabel}
                                                 points={points}
                                                 onAddPoint={addPoint}
-                                                T={params.T}
+                                                T={lastParams?.T || 1}
                                             />
                                         </div>
                                     ) : (

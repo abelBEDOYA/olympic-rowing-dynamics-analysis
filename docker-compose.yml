@@ -26,6 +26,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    environment:
+      - BACKEND_URL=http://backend:8000
     volumes:
       - ./frontend/public/img:/usr/share/nginx/html/img
       - ./frontend/public/docs:/usr/share/nginx/html/docs
